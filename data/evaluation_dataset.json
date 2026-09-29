@@ -1,0 +1,336 @@
+{
+  "version": "2.0.0",
+  "description": "Benchmark Evaluation Dataset for English <-> Urdu Banking Dispute & General Translation System",
+  "benchmark_cases": [
+    {
+      "id": "case_01",
+      "category": "ATM Hardware Failure",
+      "input": "Bhai ATM me card dala tha chal nahi raha, wahi phans gaya hai.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "Customer inserted credit card into the ATM machine; the card is currently stuck and the machine is unresponsive.",
+      "risk_rule": "Preserve hardware jam state ('phans gaya' -> 'stuck'); do not misinterpret as account block.",
+      "critical_entities": [
+        "ATM",
+        "card",
+        "stuck"
+      ]
+    },
+    {
+      "id": "case_02",
+      "category": "Failed Transfer (Debit no Credit)",
+      "input": "Mera Raast transfer fail ho gaya, account se 5000 cut gaye par dost ko nahi mile.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from sender account but not credited to beneficiary.",
+      "risk_rule": "Preserve PKR 5000 exactly. Maintain debit-no-credit state consistency ('cut gaye' -> debited, 'nahi mile' -> not credited).",
+      "critical_entities": [
+        "5000",
+        "Raast",
+        "debited",
+        "not credited"
+      ]
+    },
+    {
+      "id": "case_03",
+      "category": "Double Deduction Multiplier",
+      "input": "Maine foodpanda pe pay kiya, error aya toh dobara kiya, ab 2 dafa paise kat gaye hain.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "Customer experienced a payment gateway error on Foodpanda resulting in a duplicate charge; funds deducted twice.",
+      "risk_rule": "Preserve multiplier ('2 dafa' -> 'twice' / 'duplicate charge'); do not lose the double deduction entity.",
+      "critical_entities": [
+        "2 dafa",
+        "Foodpanda",
+        "duplicate",
+        "twice"
+      ]
+    },
+    {
+      "id": "case_04",
+      "category": "App Crash / Timeout",
+      "input": "Payment process ho rahi thi aur app achanak band ho gayi, ab status pending hai.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "Application crashed during payment processing; transaction status is currently pending.",
+      "risk_rule": "Preserve pending state ('status pending hai'); do not hallucinate whether transaction succeeded or failed.",
+      "critical_entities": [
+        "crashed",
+        "pending"
+      ]
+    },
+    {
+      "id": "case_05",
+      "category": "Unauthorized / Scam",
+      "input": "Mujhe OTP ka message aya aur foran 25k nikal gaye halanke maine koi transaction nahi ki.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "Customer reports unauthorized transaction of PKR 25,000 immediately following an OTP SMS. Fraud suspected.",
+      "risk_rule": "Preserve PKR 25,000 (from '25k'). Preserve chronological sequence (OTP received before deduction).",
+      "critical_entities": [
+        "25,000",
+        "OTP",
+        "unauthorized"
+      ]
+    },
+    {
+      "id": "case_06",
+      "category": "Biometric/Login Issue",
+      "input": "Mera thumbprint accept nahi ho raha pichle 3 din se, account locked aa raha hai.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "Customer unable to authenticate via biometrics for the past 3 days; account is currently locked.",
+      "risk_rule": "Preserve temporal duration ('pichle 3 din' -> 'past 3 days') and account lock state.",
+      "critical_entities": [
+        "3 days",
+        "thumbprint",
+        "locked"
+      ]
+    },
+    {
+      "id": "case_07",
+      "category": "Refund Delay",
+      "input": "Daraz ki refund request ki thi 1 hafta pehle, abhi tak reverse nahi hui amount.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "Customer initiated a refund request with Daraz 1 week ago; amount reversal is still pending.",
+      "risk_rule": "Preserve timeline ('1 hafta pehle' -> '1 week ago') and reversal state ('reverse nahi hui' -> reversal pending).",
+      "critical_entities": [
+        "1 week",
+        "Daraz",
+        "reversal pending"
+      ]
+    },
+    {
+      "id": "case_08",
+      "category": "Current Affairs Loanword Rule",
+      "input": "We will study current affairs today in our class.",
+      "source_lang": "en",
+      "target_lang": "ur",
+      "expected_translation": "آج ہم اپنی کلاس میں کرنٹ افیئرز پڑھیں گے۔",
+      "risk_rule": "Preserve modern loanword 'current affairs' as 'کرنٹ افیئرز' (NOT 'حالات حاضرہ').",
+      "critical_entities": [
+        "کرنٹ افیئرز",
+        "کلاس"
+      ]
+    },
+    {
+      "id": "case_09",
+      "category": "Idiom & Cultural Nuance",
+      "input": "Us ne ghalti kar k sab k samne naak katwa di.",
+      "source_lang": "ur",
+      "target_lang": "en",
+      "expected_translation": "He made a mistake and brought humiliation upon everyone in public.",
+      "risk_rule": "Avoid literal anatomical translation ('cut the nose'); capture figurative shame/dishonor.",
+      "critical_entities": [
+        "humiliation",
+        "public"
+      ]
+    },
+    {
+      "id": "case_10",
+      "category": "Context Dependency",
+      "input": "He stayed there for three days.",
+      "source_lang": "en",
+      "target_lang": "ur",
+      "expected_translation": "وہ وہاں تین دن رکا۔",
+      "risk_rule": "Context dependency requires previous turn to resolve 'there' and gender pronoun 'He'.",
+      "critical_entities": [
+        "تین دن",
+        "وہ"
+      ]
+    }
+  ],
+  "human_reviewed_samples": [
+    {
+      "timestamp": 1790516363.5702045,
+      "session_id": "audit_sess_101",
+      "original_text": "Mera Raast transfer fail ho gaya, 5000 cut gaye par receiver ko nahi mile",
+      "ai_translation": "Raast transfer failed, 5000 deducted but not credited to receiver.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from sender account but not credited to beneficiary.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Added standard PKR prefix and formal banking compliance terminology."
+    },
+    {
+      "timestamp": 1790518617.495536,
+      "session_id": "session_yqpzjy4",
+      "original_text": "Maine foodpanda pe pay kiya, error aya toh dobara kiya, ab 2 dafa paise kat gaye hain.",
+      "ai_translation": "Google Gemini free-tier rate limit reached (20 requests/minute). Please wait a few seconds and try again.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"Maine foodpanda pe pay kiya, error aya toh dobara kiya, ab 2 dafa paise kat gaye hain.\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790525880.3503368,
+      "session_id": "session_6su48m6",
+      "original_text": "Maine foodpanda pe pay kiya, error aya toh dobara kiya, ab 2 dafa paise kat gaye hain.",
+      "ai_translation": "Google Gemini free-tier rate limit reached (20 requests/minute). Please wait a few seconds and try again.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"Maine foodpanda pe pay kiya, error aya toh dobara kiya, ab 2 dafa paise kat gaye hain.\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790526702.689128,
+      "session_id": "session_miz7cy3",
+      "original_text": "Mera Raast transfer fail ho gaya, account se 5000 cut gaye par dost ko nahi mile.",
+      "ai_translation": "Google Gemini free-tier rate limit reached (20 requests/minute). Please wait a few seconds and try again.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"Mera Raast transfer fail ho gaya, account se 5000 cut gaye par dost ko nahi mile.\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790529128.22635,
+      "session_id": "session_c21kmt0",
+      "original_text": "hi",
+      "ai_translation": "The input 'hi' is too brief and lacks context to be processed as a banking complaint or resolution.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"hi\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_AMBIGUOUS",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790561199.9983969,
+      "session_id": "session_khi0i2m",
+      "original_text": "fyp",
+      "ai_translation": "معلومات غیر واضح ہیں (FYP)",
+      "human_action": "correct",
+      "final_translation": "ایف واۓ پی",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_AMBIGUOUS",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790610230.958091,
+      "session_id": "test_hitl_session_1",
+      "original_text": "اے ٹی ایم میں 5000 روپے پھنس گئے ہیں",
+      "ai_translation": "5000 PKR stuck in ATM machine.",
+      "human_action": "correct",
+      "final_translation": "PKR 5,000 cash was trapped in ATM hardware.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW",
+      "reviewer_notes": "AI Engineer corrected currency formatting and hardware term."
+    },
+    {
+      "timestamp": 1790610951.7921045,
+      "session_id": "test_hitl_session_99",
+      "original_text": "My Raast transfer of PKR 5,000 failed; 5000 debited.",
+      "ai_translation": "میرا راستہ ٹرانسفر فیل ہو گیا۔",
+      "human_action": "correct",
+      "final_translation": "میرا راستہ ٹرانسفر فیل ہو گیا اور 5000 روپے کٹ گئے۔",
+      "original_risk_level": "HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Inline human correction added PKR 5,000 number to final text."
+    },
+    {
+      "timestamp": 1790619769.2160347,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1790619913.3596313,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1790620870.5604467,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1790621057.0907009,
+      "session_id": "session_9yinmra",
+      "original_text": "Hi",
+      "ai_translation": "Customer initiated a standard greeting.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"Hi\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_AMBIGUOUS",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790621473.2658846,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1790621668.790304,
+      "session_id": "session_c5hcdx9",
+      "original_text": "Hi",
+      "ai_translation": "Customer greeting received.",
+      "human_action": "correct",
+      "final_translation": "ہیلو",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_AMBIGUOUS",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790621741.681179,
+      "session_id": "session_c5hcdx9",
+      "original_text": "Raast payment of 5000",
+      "ai_translation": "Customer initiated or referenced a Raast payment of PKR 5000.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"Raast payment of 5000\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_AMBIGUOUS",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790621741.7511616,
+      "session_id": "session_c5hcdx9",
+      "original_text": "Raast payment of 5000",
+      "ai_translation": "Customer initiated or referenced a Raast payment transaction.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"Raast payment of 5000\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_AMBIGUOUS",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790621741.79715,
+      "session_id": "session_c5hcdx9",
+      "original_text": "Raast payment of 5000",
+      "ai_translation": "Customer initiated or referenced a Raast payment transaction.",
+      "human_action": "reject",
+      "final_translation": "[REJECTED & ESCALATED TO FRAUD/COMPLIANCE] Original complaint: \"Raast payment of 5000\"",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_AMBIGUOUS",
+      "reviewer_notes": ""
+    },
+    {
+      "timestamp": 1790622926.4108045,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1790623655.5617805,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    }
+  ]
+}

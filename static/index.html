@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bilangual | English ⇄ Urdu Neural Translator</title>
+  <meta name="description" content="Clean, minimal AI-powered English to Urdu and Urdu to English translator.">
+
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-logo" id="brandLogo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h11"></path>
+            <path d="M9 20l6-13 6 13"></path>
+            <path d="M17 16h6"></path>
+            <path d="M7 4v3"></path>
+            <path d="M2 11h10c-1.5 3-4 6-7 8"></path>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <span class="brand-title">Bilangual</span>
+          <span class="brand-sub">English ⇄ Urdu Translator</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- History Drawer Toggle -->
+      <button id="historyToggleBtn" class="header-btn" title="Translation History" aria-label="History">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span class="btn-text">History</span>
+        <span id="historyBadge" class="history-count">0</span>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button id="themeToggleBtn" class="header-btn icon-only" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
+        <svg id="themeIconSun" class="theme-icon" width="19" height="19" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="themeIconMoon" class="theme-icon hidden" width="19" height="19" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Translator Container -->
+  <main class="translator-container">
+
+    <!-- Direction Navigation / Mode Switcher -->
+    <div class="direction-bar-wrapper">
+      <div class="direction-control" role="tablist">
+        <button id="modeEnToUrBtn" class="direction-tab active" data-source="en" data-target="ur" role="tab"
+          aria-selected="true">
+          <span>English</span>
+          <span class="dir-arrow">→</span>
+          <span class="urdu-font">اردو</span>
+        </button>
+
+        <button id="swapDirectionBtn" class="swap-direction-btn" title="Swap Direction (Ctrl+Shift+S)"
+          aria-label="Swap direction">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3L4 7l4 4"></path>
+            <path d="M4 7h16"></path>
+            <path d="M16 21l4-4-4-4"></path>
+            <path d="M20 17H4"></path>
+          </svg>
+        </button>
+
+        <button id="modeUrToEnBtn" class="direction-tab" data-source="ur" data-target="en" role="tab"
+          aria-selected="false">
+          <span class="urdu-font">اردو</span>
+          <span class="dir-arrow">→</span>
+          <span>English</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive Language Mismatch Alert Banner -->
+    <div id="mismatchBanner" class="mismatch-banner hidden" role="alert">
+      <div class="mismatch-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="mismatch-body">
+        <div class="mismatch-title">Input Language Mismatch</div>
+        <div id="mismatchMessage" class="mismatch-msg">
+          You selected <strong>Urdu → English</strong>, but entered English text.
+        </div>
+      </div>
+      <button id="autoSwitchActionBtn" class="mismatch-switch-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M8 3L4 7l4 4"></path>
+          <path d="M4 7h16"></path>
+          <path d="M16 21l4-4-4-4"></path>
+          <path d="M20 17H4"></path>
+        </svg>
+        <span id="autoSwitchBtnText">Switch Direction & Translate</span>
+      </button>
+    </div>
+
+    <!-- Main Translator Workbench Card -->
+    <div class="translator-card">
+      <div class="panes-wrapper">
+
+        <!-- Source Input Pane (Left) -->
+        <section class="pane source-pane">
+          <div class="pane-header">
+            <div class="pane-lang-badge" id="sourceLangBadge">
+              <span class="badge-dot"></span>
+              <span id="sourceLangName">English</span>
+            </div>
+            <div class="pane-actions-quick">
+              <button id="clearInputBtn" class="icon-btn-subtle hidden" title="Clear text (Esc)"
+                aria-label="Clear input">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="pane-content">
+            <div class="textarea-wrap">
+              <textarea id="sourceInput" class="translate-textarea"
+                placeholder="Type or paste text here... (Try 'current affairs')" spellcheck="true" autofocus
+                maxlength="5000"></textarea>
+            </div>
+          </div>
+
+          <!-- Source Bottom Toolbar -->
+          <div class="pane-toolbar">
+            <div class="toolbar-left">
+              <!-- Speech-to-Text / Microphone Voice Input -->
+              <button id="micBtn" class="tool-btn" title="Translate by voice (Microphone)" aria-label="Voice input">
+                <svg class="mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <span class="mic-wave"></span>
+              </button>
+
+            </div>
+
+            <div class="toolbar-right">
+              <span id="charCount" class="char-count">0 / 5,000</span>
+              <button id="manualTranslateBtn" class="btn-translate" title="Translate now (Ctrl+Enter)">
+                <span>Translate</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Target Output Pane (Right) -->
+        <section class="pane target-pane">
+          <div class="pane-header">
+            <div class="pane-lang-badge" id="targetLangBadge">
+              <span class="badge-dot dot-emerald"></span>
+              <span id="targetLangName" class="urdu-font">اردو</span>
+            </div>
+            <div class="pane-actions-quick">
+              <!-- Confidence Score Badge -->
+              <span id="confidenceBadge" class="confidence-badge" title="Model Confidence Score">
+                Score: 99.0%
+              </span>
+              <!-- Quality Status Tag -->
+              <span id="riskStatusBadge" class="risk-badge badge-approved">
+                <span class="badge-icon">✓</span>
+                <span id="riskBadgeText">Verified</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="pane-content">
+            <!-- Loading Shimmer State -->
+            <div id="targetLoading" class="target-loading hidden">
+              <div class="shimmer-line line-1"></div>
+              <div class="shimmer-line line-2"></div>
+              <div class="shimmer-line line-3"></div>
+            </div>
+
+            <!-- Translated Text Display -->
+            <div id="targetOutput" class="translate-output empty urdu-script" tabindex="0">
+              <span class="placeholder-text">ترجمہ (Translation)</span>
+            </div>
+
+            <!-- Phonetic / Roman Urdu Pronunciation Bar -->
+            <div id="pronunciationWrap" class="pronunciation-wrap hidden">
+              <span class="pronunciation-label">Pronunciation:</span>
+              <span id="pronunciationText" class="pronunciation-text"></span>
+            </div>
+
+            <!-- Node N: Interactive Human-in-the-Loop Review Console (Shown Only If Flagged) -->
+            <div id="hitlReviewBox" class="hitl-review-box hidden">
+              <div class="hitl-header">
+                <div class="hitl-title">
+                  <span class="hitl-warn-icon">⚠️</span>
+                  <span>Human Review Required</span>
+                </div>
+                <span class="hitl-tag">Review Gate</span>
+              </div>
+
+              <div id="hitlReasonText" class="hitl-reason">
+                <!-- Injected dynamically -->
+              </div>
+
+              <div class="hitl-edit-wrap">
+                <label for="hitlEditText" class="hitl-edit-label">Correct Translation (Edit in place):</label>
+                <textarea id="hitlEditText" class="hitl-textarea" rows="3"
+                  placeholder="Review or correct the translation text before approving..."></textarea>
+              </div>
+
+              <div class="hitl-notes-wrap">
+                <input type="text" id="hitlNotesInput" class="hitl-notes-input"
+                  placeholder="Reviewer notes or reason for correction (optional)...">
+              </div>
+
+              <div class="hitl-actions">
+                <button id="hitlAcceptBtn" class="hitl-btn btn-accept" title="Accept the AI draft as verified">
+                  <span>✓ Accept Draft</span>
+                </button>
+                <button id="hitlCorrectBtn" class="hitl-btn btn-correct"
+                  title="Save your edited correction into final output">
+                  <span>✍️ Save & Approve</span>
+                </button>
+                <button id="hitlRejectBtn" class="hitl-btn btn-reject" title="Reject this translation">
+                  <span>✕ Reject</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Target Bottom Toolbar -->
+          <div class="pane-toolbar">
+            <div class="toolbar-left">
+
+              <!-- Copy to Clipboard -->
+              <button id="copyBtn" class="tool-btn" title="Copy translation to clipboard" aria-label="Copy">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+
+              <!-- Star / Save Translation -->
+              <button id="starBtn" class="tool-btn" title="Save to starred" aria-label="Save">
+                <svg id="starIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                  </polygon>
+                </svg>
+              </button>
+            </div>
+
+            <div class="toolbar-right">
+              <span id="targetStatusText" class="target-status-label">Ready</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Dictionary & Alternatives Card (Appears if single word or term) -->
+    <section id="dictionaryCard" class="dictionary-card hidden">
+      <div class="dictionary-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>Alternative Translations & Synonyms</span>
+      </div>
+      <div id="synonymsChips" class="synonyms-chips">
+        <!-- Injected dynamically -->
+      </div>
+      <div id="definitionsList" class="definitions-list">
+        <!-- Injected dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- History Slide-over Drawer -->
+  <aside id="historyDrawer" class="history-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <h3>Translation Logs & Context</h3>
+      </div>
+      <button id="closeDrawerBtn" class="close-drawer-btn" title="Close" aria-label="Close drawer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Drawer Tab Selector -->
+    <div class="drawer-tab-bar" role="tablist">
+      <button id="historyTabDb" class="drawer-tab active" role="tab" aria-selected="true">
+        <span>SQLite Usage Logs</span>
+      </button>
+      <button id="historyTabContext" class="drawer-tab" role="tab" aria-selected="false">
+        <span>Session Context</span>
+      </button>
+    </div>
+
+    <div class="drawer-actions">
+      <button id="refreshHistoryBtn" class="drawer-action-btn" title="Refresh history logs from SQLite database">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        <span>Refresh DB</span>
+      </button>
+      <button id="clearHistoryBtn" class="drawer-action-btn" title="Clear local history view">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        <span>Clear</span>
+      </button>
+    </div>
+
+    <div id="historyList" class="history-list">
+      <!-- Injected dynamically -->
+    </div>
+  </aside>
+
+  <!-- Drawer Backdrop Overlay -->
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+  <!-- Toast Notification Popover -->
+  <div id="toast" class="toast-popup" role="status" aria-live="polite"></div>
+
+  <!-- JavaScript Application Entry -->
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>

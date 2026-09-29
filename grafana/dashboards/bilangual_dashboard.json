@@ -1,0 +1,93 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Translation API Request Rate (req/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(http_requests_total{handler=~\"/api/v1/.*\"}[1m])",
+          "legendFormat": "{{handler}} [{{status}}]"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Translation Latency (Seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{handler=\"/api/v1/translate\"}[1m])) by (le))",
+          "legendFormat": "p95 Latency"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{handler=\"/api/v1/translate\"}[1m])) by (le))",
+          "legendFormat": "p50 Latency"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "HTTP 200 vs Non-200 Status Codes",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum(http_requests_total{handler=~\"/api/v1/.*\"})",
+          "legendFormat": "Total Requests"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Human Feedback / Review Rate",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum(http_requests_total{handler=\"/api/v1/feedback\"}) or vector(0)",
+          "legendFormat": "Feedback Submissions"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "FastAPI Active Endpoint Throughput",
+      "type": "barplot",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "sum by (handler) (http_requests_total)",
+          "legendFormat": "{{handler}}"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["bilangual", "mlops", "fastapi"],
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "title": "Bilangual MLOps & Telemetry Dashboard",
+  "uid": "bilangual-mlops-dashboard"
+}
