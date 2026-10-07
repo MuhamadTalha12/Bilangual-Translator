@@ -151,8 +151,15 @@ Open your browser at **`http://127.0.0.1:8000`** to access the user interface.
 
 ## 5. REST API Endpoints
 
-* `POST /api/v1/translate`: Primary translation pipeline with direction validation (`en->ur` or `ur->en`) and risk audit.
+* `POST /api/v1/translate`: Primary translation pipeline with direction validation (`en->ur` or `ur->en`), risk audit, and optional `user_id` / `username` tracking.
 * `POST /api/v1/human-review`: Resolves flagged high-risk translations (Accept, Correct, Reject).
+* `POST /api/v1/feedback`: Human-in-the-loop review feedback submission with user metadata.
+* `GET /api/v1/history`: Persistent SQLite translation logs, filterable by `user_id`, `username`, or `session_id`.
+* `GET /api/v1/users`: Fetches all registered users with translation activity counts.
+* `POST /api/v1/users`: Creates a new user profile (`username`, `display_name`, `email`) for maintaining isolated history logs.
+* `GET /api/v1/users/{user_id_or_name}`: Retrieves user profile details and activity statistics.
+* `DELETE /api/v1/users/{user_id_or_name}`: Deletes user profile (protected for default system user).
+* `DELETE /api/v1/users/{user_id_or_name}/history`: Clears translation history logs for a specific user.
 * `GET /api/v1/metrics`: Live telemetry deck for Cost (Q), Latency (R), and Quality (S).
 * `GET /api/v1/evaluation-dataset`: Inspects gold benchmark test cases and audited human reviews.
 * `GET /api/v1/scenarios`: Returns the 7 frozen golden fintech dispute scenarios.
@@ -162,7 +169,17 @@ Open your browser at **`http://127.0.0.1:8000`** to access the user interface.
 
 ---
 
-## 6. Documentation
+## 6. Multi-User History Management
+
+The system supports multi-user tracking while preserving 100% of underlying translation, risk assessment, and telemetry functionality:
+* **Zero Disruption / Backward Compatibility:** All existing endpoints (`/translate`, `/feedback`, `/history`) maintain full compatibility. Omitting user fields gracefully defaults to the system `default` user.
+* **User Isolation:** Each user has their own tracked history in SQLite database (`bilangual_history.db`), accessible via user dropdown in the frontend or API filter parameters (`?username=...`).
+* **Profile Switcher:** An interactive UI pill in the top header allows instant 1-click user switching and quick new profile creation without page reload.
+* **Per-User Log Maintenance:** Users can inspect or clear their individual translation history without affecting other users' logs.
+
+---
+
+## 7. Documentation
 For the complete 15-phase AI engineering specification, viva voce defense guide, and failure analysis, see:
 * [`docs/PROJECT_PROPOSAL_SPECIFICATION.md`](docs/PROJECT_PROPOSAL_SPECIFICATION.md)
-"# Bilangual-Translator" 
+ 

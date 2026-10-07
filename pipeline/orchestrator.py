@@ -84,7 +84,9 @@ class TranslationPipeline:
         raw_text: str,
         source_lang: str = "en",
         target_lang: str = "ur",
-        session_id: str = "default"
+        session_id: str = "default",
+        user_id: Optional[int] = None,
+        username: Optional[str] = "default"
     ) -> TranslationResponse:
         t_start = time.time()
         norm_src = (source_lang or "en").lower()
@@ -119,7 +121,9 @@ class TranslationPipeline:
                 latency_breakdown=LatencyBreakdown(total_ms=0.0),
                 cost_metrics=CostMetrics(),
                 quality_metrics=QualityMetrics(),
-                session_id=session_id
+                session_id=session_id,
+                user_id=user_id,
+                username=username or "default"
             )
 
         # -------------------------------------------------------------
@@ -206,7 +210,9 @@ class TranslationPipeline:
                 cost_metrics=CostMetrics(**telemetry["cost"]),
                 quality_metrics=QualityMetrics(**telemetry["quality"]),
                 crawl_walk_run=cwr_report,
-                session_id=session_id
+                session_id=session_id,
+                user_id=user_id,
+                username=username or "default"
             )
 
         # -------------------------------------------------------------
@@ -341,6 +347,8 @@ class TranslationPipeline:
             db = SessionLocal()
             log_entry = TranslationLog(
                 session_id=session_id,
+                user_id=user_id,
+                username=username or "default",
                 source_text=raw_text,
                 target_text=translation_text,
                 detected_script=source_lang,
@@ -420,7 +428,9 @@ class TranslationPipeline:
             cost_metrics=CostMetrics(**telemetry["cost"]),
             quality_metrics=quality_metrics,
             crawl_walk_run=cwr_report,
-            session_id=session_id
+            session_id=session_id,
+            user_id=user_id,
+            username=username or "default"
         )
 
     def submit_human_review(
@@ -431,7 +441,9 @@ class TranslationPipeline:
         action: str,
         final_translation: str,
         risk_level: str = "",
-        reviewer_notes: str = ""
+        reviewer_notes: str = "",
+        user_id: Optional[int] = None,
+        username: Optional[str] = "default"
     ) -> HumanReviewResponse:
         """Executes Node N -> Node M -> Node P -> Node E and logs to Node O (Evaluation Dataset)."""
         # 1. Update Context Manager with human-approved final translation
@@ -455,6 +467,8 @@ class TranslationPipeline:
             db = SessionLocal()
             fb_entry = FeedbackLog(
                 session_id=session_id,
+                user_id=user_id,
+                username=username or "default",
                 original_text=original_text,
                 ai_translation=ai_translation,
                 action=action,
@@ -474,5 +488,7 @@ class TranslationPipeline:
             action_taken=action,
             final_translation=final_translation,
             session_id=session_id,
+            user_id=user_id,
+            username=username or "default",
             logged_to_evaluation_dataset=True
         )

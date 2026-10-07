@@ -24,7 +24,15 @@
     history: [],
     isListening: false,
     theme: localStorage.getItem('bilangual_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-    archVisualizerOpen: false
+    archVisualizerOpen: false,
+    currentUser: JSON.parse(localStorage.getItem('bilangual_active_user') || 'null') || {
+      id: 1,
+      username: 'default',
+      display_name: 'Default User',
+      total_translations: 0
+    },
+    usersList: [],
+    historyUserFilter: 'current'
   };
 
   const URDU_REGEX = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/g;
@@ -133,6 +141,25 @@
     historyTabContext: document.getElementById('historyTabContext'),
     historyList: document.getElementById('historyList'),
 
+    // User Profile & Switcher Elements
+    userProfileWrapper: document.getElementById('userProfileWrapper'),
+    userProfileBtn: document.getElementById('userProfileBtn'),
+    headerUserAvatar: document.getElementById('headerUserAvatar'),
+    headerUserName: document.getElementById('headerUserName'),
+    userDropdownMenu: document.getElementById('userDropdownMenu'),
+    menuUserAvatar: document.getElementById('menuUserAvatar'),
+    menuUserName: document.getElementById('menuUserName'),
+    menuUserHandle: document.getElementById('menuUserHandle'),
+    menuUserStatsPill: document.getElementById('menuUserStatsPill'),
+    userOptionsList: document.getElementById('userOptionsList'),
+    toggleNewUserFormBtn: document.getElementById('toggleNewUserFormBtn'),
+    newUserForm: document.getElementById('newUserForm'),
+    newUsernameInput: document.getElementById('newUsernameInput'),
+    newDisplayNameInput: document.getElementById('newDisplayNameInput'),
+    cancelCreateUserBtn: document.getElementById('cancelCreateUserBtn'),
+    historyUserFilterSelect: document.getElementById('historyUserFilterSelect'),
+    clearUserHistoryBtn: document.getElementById('clearUserHistoryBtn'),
+
     // Toast
     toast: document.getElementById('toast')
   };
@@ -145,6 +172,7 @@
 
   function init() {
     applyTheme(state.theme);
+    loadUsers();
     loadHistory();
     refreshTelemetryMetrics();
     setupSpeechRecognition();
@@ -394,7 +422,9 @@
         text: text,
         source_lang: state.sourceLang,
         target_lang: state.targetLang,
-        session_id: state.sessionId
+        session_id: state.sessionId,
+        user_id: state.currentUser ? state.currentUser.id : null,
+        username: state.currentUser ? state.currentUser.username : 'default'
       };
 
       const res = await fetch('/api/v1/translate', {
@@ -410,6 +440,11 @@
 
       const data = await res.json();
       renderTranslationResult(data);
+
+      if (state.currentUser) {
+        state.currentUser.total_translations = (state.currentUser.total_translations || 0) + 1;
+        renderUserHeaderUI();
+      }
 
       saveToHistory({
         sourceText: text,
@@ -570,7 +605,9 @@
         action: action,
         final_translation: finalTranslation,
         risk_level: state.riskLevel,
-        reviewer_notes: elements.hitlNotesInput.value.trim()
+        reviewer_notes: elements.hitlNotesInput.value.trim(),
+        user_id: state.currentUser ? state.currentUser.id : null,
+        username: state.currentUser ? state.currentUser.username : 'default'
       };
 
       const res = await fetch('/api/v1/feedback', {
@@ -825,7 +862,14 @@
     `;
 
     try {
-      const res = await fetch('/api/v1/history?limit=50');
+      let url = '/api/v1/history?limit=50';
+      if (state.historyUserFilter === 'current' && state.currentUser && state.currentUser.username) {
+        url = `/api/v1/history?username=${encodeURIComponent(state.currentUser.username)}&limit=50`;
+      } else if (state.historyUserFilter && state.historyUserFilter !== 'all') {
+        url = `/api/v1/history?username=${encodeURIComponent(state.historyUserFilter)}&limit=50`;
+      }
+
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch history');
       const logs = await res.json();
       
@@ -837,6 +881,28 @@
     } catch (err) {
       console.warn('Failed to load SQLite history logs:', err);
       renderHistoryList(state.history);
+    }
+  }
+
+  async function clearActiveUserHistoryFromDb() {
+    if (!state.currentUser || !state.currentUser.username) return;
+    const username = state.currentUser.username;
+    if (!confirm(`Are you sure you want to clear translation history logs for user '@${username}'?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/users/${encodeURIComponent(username)}/history`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to clear user history');
+      const data = await res.json();
+      showToast(`Cleared ${data.deleted_logs} logs for @${username}`);
+      await fetchHistoryFromDb();
+      loadUsers();
+    } catch (e) {
+      console.error(e);
+      showToast('Error clearing user history');
     }
   }
 
@@ -893,6 +959,7 @@
         <div class="history-item-source">${escapeHtml(log.source_text)}</div>
         <div class="history-item-target">${escapeHtml(log.target_text)}</div>
         <div class="history-item-footer">
+          <span class="history-user-tag">👤 @${escapeHtml(log.username || 'default')}</span>
           <span>Sess: ${escapeHtml(log.session_id || 'default')}</span>
           <span>${timeMs} • ${dateStr}</span>
         </div>
@@ -969,10 +1036,233 @@
   }
 
   // ==========================================================================
+  // User Management & Profile Switcher
+  // ==========================================================================
+
+  async function loadUsers() {
+    try {
+      const res = await fetch('/api/v1/users');
+      if (!res.ok) return;
+      const users = await res.json();
+      state.usersList = users || [];
+
+      // Sync active user profile
+      const match = state.usersList.find(u => u.username === state.currentUser.username);
+      if (match) {
+        state.currentUser = { ...state.currentUser, ...match };
+        localStorage.setItem('bilangual_active_user', JSON.stringify(state.currentUser));
+      }
+
+      renderUserHeaderUI();
+      renderUserOptionsList();
+      populateHistoryUserFilterSelect();
+    } catch (e) {
+      console.warn('Failed to load users:', e);
+    }
+  }
+
+  function renderUserHeaderUI() {
+    const cur = state.currentUser || { username: 'default', display_name: 'Default User' };
+    const initial = (cur.display_name || cur.username || 'D').charAt(0).toUpperCase();
+
+    if (elements.headerUserAvatar) elements.headerUserAvatar.textContent = initial;
+    if (elements.headerUserName) elements.headerUserName.textContent = cur.display_name || cur.username;
+    if (elements.menuUserAvatar) elements.menuUserAvatar.textContent = initial;
+    if (elements.menuUserName) elements.menuUserName.textContent = cur.display_name || cur.username;
+    if (elements.menuUserHandle) elements.menuUserHandle.textContent = `@${cur.username}`;
+    if (elements.menuUserStatsPill) {
+      elements.menuUserStatsPill.textContent = `${cur.total_translations || 0} translations`;
+    }
+  }
+
+  function renderUserOptionsList() {
+    if (!elements.userOptionsList) return;
+    elements.userOptionsList.innerHTML = '';
+
+    if (!state.usersList || state.usersList.length === 0) {
+      elements.userOptionsList.innerHTML = `<div class="user-option-sub" style="padding:0.4rem;">No profiles found</div>`;
+      return;
+    }
+
+    state.usersList.forEach(u => {
+      const isActive = u.username === state.currentUser.username;
+      const initial = (u.display_name || u.username || 'U').charAt(0).toUpperCase();
+
+      const item = document.createElement('div');
+      item.className = `user-option-item ${isActive ? 'active' : ''}`;
+      item.innerHTML = `
+        <div class="user-option-left">
+          <div class="user-option-avatar">${initial}</div>
+          <div class="user-option-info">
+            <span class="user-option-name">${escapeHtml(u.display_name || u.username)}</span>
+            <span class="user-option-sub">@${escapeHtml(u.username)} • ${u.total_translations || 0} logs</span>
+          </div>
+        </div>
+        ${isActive ? '<span class="user-option-check">✓</span>' : ''}
+      `;
+
+      item.addEventListener('click', () => {
+        switchActiveUser(u);
+        closeUserDropdown();
+      });
+
+      elements.userOptionsList.appendChild(item);
+    });
+  }
+
+  function populateHistoryUserFilterSelect() {
+    if (!elements.historyUserFilterSelect) return;
+    const currentVal = elements.historyUserFilterSelect.value || state.historyUserFilter;
+    elements.historyUserFilterSelect.innerHTML = `
+      <option value="all" ${currentVal === 'all' ? 'selected' : ''}>👥 All Users</option>
+      <option value="current" ${currentVal === 'current' ? 'selected' : ''}>👤 Current User (@${escapeHtml(state.currentUser.username)})</option>
+    `;
+
+    state.usersList.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.username;
+      opt.textContent = `• @${u.username} (${u.display_name || u.username})`;
+      if (currentVal === u.username) opt.selected = true;
+      elements.historyUserFilterSelect.appendChild(opt);
+    });
+  }
+
+  function switchActiveUser(user) {
+    if (!user) return;
+    state.currentUser = {
+      id: user.id,
+      username: user.username,
+      display_name: user.display_name || user.username,
+      total_translations: user.total_translations || 0
+    };
+    localStorage.setItem('bilangual_active_user', JSON.stringify(state.currentUser));
+    
+    // Switch session context to isolate conversational context memory
+    state.sessionId = `sess_${user.username}_` + Math.random().toString(36).substring(2, 7);
+
+    renderUserHeaderUI();
+    renderUserOptionsList();
+    populateHistoryUserFilterSelect();
+    showToast(`Switched active profile to @${user.username}`);
+
+    if (elements.historyDrawer && elements.historyDrawer.classList.contains('open')) {
+      refreshHistoryList();
+    }
+  }
+
+  async function handleCreateUserSubmit(e) {
+    e.preventDefault();
+    const rawUsername = elements.newUsernameInput.value.trim().toLowerCase();
+    const rawDisplayName = elements.newDisplayNameInput.value.trim();
+
+    if (!rawUsername) {
+      showToast('Please enter a username');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/v1/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: rawUsername,
+          display_name: rawDisplayName || rawUsername
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Failed to create user');
+      }
+
+      const newUser = await res.json();
+      showToast(`User @${newUser.username} ready!`);
+
+      // Reset form
+      elements.newUserForm.reset();
+      elements.newUserForm.classList.add('hidden');
+      if (elements.toggleNewUserFormBtn) elements.toggleNewUserFormBtn.classList.remove('hidden');
+
+      await loadUsers();
+      switchActiveUser(newUser);
+      closeUserDropdown();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Error creating user');
+    }
+  }
+
+  function toggleUserDropdown(e) {
+    if (e) e.stopPropagation();
+    const isClosed = elements.userDropdownMenu.classList.contains('hidden');
+    if (isClosed) {
+      openUserDropdown();
+    } else {
+      closeUserDropdown();
+    }
+  }
+
+  function openUserDropdown() {
+    if (!elements.userDropdownMenu) return;
+    elements.userDropdownMenu.classList.remove('hidden');
+    if (elements.userProfileWrapper) elements.userProfileWrapper.classList.add('open');
+    if (elements.userProfileBtn) elements.userProfileBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeUserDropdown() {
+    if (!elements.userDropdownMenu) return;
+    elements.userDropdownMenu.classList.add('hidden');
+    if (elements.userProfileWrapper) elements.userProfileWrapper.classList.remove('open');
+    if (elements.userProfileBtn) elements.userProfileBtn.setAttribute('aria-expanded', 'false');
+    if (elements.newUserForm) elements.newUserForm.classList.add('hidden');
+    if (elements.toggleNewUserFormBtn) elements.toggleNewUserFormBtn.classList.remove('hidden');
+  }
+
+  // ==========================================================================
   // Event Listeners
   // ==========================================================================
 
   function setupEventListeners() {
+    // User Profile Dropdown & Controls
+    if (elements.userProfileBtn) elements.userProfileBtn.addEventListener('click', toggleUserDropdown);
+    if (elements.toggleNewUserFormBtn) {
+      elements.toggleNewUserFormBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        elements.toggleNewUserFormBtn.classList.add('hidden');
+        if (elements.newUserForm) {
+          elements.newUserForm.classList.remove('hidden');
+          if (elements.newUsernameInput) elements.newUsernameInput.focus();
+        }
+      });
+    }
+    if (elements.cancelCreateUserBtn) {
+      elements.cancelCreateUserBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (elements.newUserForm) elements.newUserForm.classList.add('hidden');
+        if (elements.toggleNewUserFormBtn) elements.toggleNewUserFormBtn.classList.remove('hidden');
+      });
+    }
+    if (elements.newUserForm) elements.newUserForm.addEventListener('submit', handleCreateUserSubmit);
+
+    // Close user dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (elements.userProfileWrapper && !elements.userProfileWrapper.contains(e.target)) {
+        closeUserDropdown();
+      }
+    });
+
+    // History User Filter Select
+    if (elements.historyUserFilterSelect) {
+      elements.historyUserFilterSelect.addEventListener('change', (e) => {
+        state.historyUserFilter = e.target.value;
+        fetchHistoryFromDb();
+      });
+    }
+
+    // Clear Active User History from Database
+    if (elements.clearUserHistoryBtn) {
+      elements.clearUserHistoryBtn.addEventListener('click', clearActiveUserHistoryFromDb);
+    }
     // Theme toggle
     if (elements.themeToggleBtn) elements.themeToggleBtn.addEventListener('click', toggleTheme);
 

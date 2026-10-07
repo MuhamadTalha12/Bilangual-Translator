@@ -1,11 +1,26 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=2, max_length=50, description="Unique username")
+    display_name: Optional[str] = Field(None, max_length=150, description="Display name or full name")
+    email: Optional[str] = Field(None, max_length=255, description="Optional email address")
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    display_name: Optional[str] = None
+    email: Optional[str] = None
+    created_at: Optional[str] = None
+    total_translations: int = 0
+
 class TranslationRequest(BaseModel):
     text: str = Field(..., description="The input text to translate")
     source_lang: Optional[str] = Field("en", description="Source language code ('en', 'ur', 'auto')")
     target_lang: Optional[str] = Field("ur", description="Target language code ('ur', 'en')")
     session_id: Optional[str] = Field("default", description="Unique conversation session ID")
+    user_id: Optional[int] = Field(None, description="Optional user ID for maintaining user-specific logs")
+    username: Optional[str] = Field("default", description="Optional username for user-specific history")
 
 class LatencyBreakdown(BaseModel):
     preprocessing_ms: float = 0.0
@@ -81,6 +96,8 @@ class TranslationResponse(BaseModel):
     quality_metrics: Optional[QualityMetrics] = None
     crawl_walk_run: Optional[CrawlWalkRunReport] = None
     session_id: Optional[str] = "default"
+    user_id: Optional[int] = None
+    username: Optional[str] = "default"
 
 class HumanReviewRequest(BaseModel):
     session_id: str
@@ -90,6 +107,8 @@ class HumanReviewRequest(BaseModel):
     final_translation: str = Field(..., description="The approved or human-corrected final text")
     risk_level: Optional[str] = ""
     reviewer_notes: Optional[str] = ""
+    user_id: Optional[int] = None
+    username: Optional[str] = "default"
 
 class FeedbackRequest(HumanReviewRequest):
     """Feedback request schema matching HumanReviewRequest for /api/v1/feedback."""
@@ -101,6 +120,8 @@ class HumanReviewResponse(BaseModel):
     action_taken: str
     final_translation: str
     session_id: str
+    user_id: Optional[int] = None
+    username: Optional[str] = "default"
     logged_to_evaluation_dataset: bool = True
 
 class ContextHistoryResponse(BaseModel):

@@ -1,3 +1,5 @@
+import os
+import json
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -7,11 +9,13 @@ from core.schemas import (
     ContextHistoryResponse,
     HumanReviewRequest,
     FeedbackRequest,
-    HumanReviewResponse
+    HumanReviewResponse,
+    UserCreate,
+    UserResponse
 )
 from pipeline.orchestrator import TranslationPipeline, LanguageMismatchError
 from core.config import settings
-from core.database import get_db, TranslationLog, FeedbackLog
+from core.database import get_db, TranslationLog, FeedbackLog, User
 
 router = APIRouter()
 pipeline = TranslationPipeline()
@@ -22,13 +26,31 @@ SUPPORTED_LANGUAGES = [
 ]
 
 @router.post("/translate", response_model=TranslationResponse)
-async def translate(request: TranslationRequest):
+async def translate(request: TranslationRequest, db: Session = Depends(get_db)):
     try:
+        user_id = request.user_id
+        username = (request.username or "default").strip().lower()
+        if user_id is None and username:
+            user = db.query(User).filter(User.username == username).first()
+            if user:
+                user_id = user.id
+            else:
+                try:
+                    user = User(username=username, display_name=username.title())
+                    db.add(user)
+                    db.commit()
+                    db.refresh(user)
+                    user_id = user.id
+                except Exception:
+                    db.rollback()
+
         response = pipeline.process(
             raw_text=request.text,
             source_lang=request.source_lang or "en",
             target_lang=request.target_lang or "ur",
-            session_id=request.session_id or "default"
+            session_id=request.session_id or "default",
+            user_id=user_id,
+            username=username
         )
         return response
     except LanguageMismatchError as e:
@@ -37,9 +59,16 @@ async def translate(request: TranslationRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/human-review", response_model=HumanReviewResponse)
-async def submit_human_review(request: HumanReviewRequest):
+async def submit_human_review(request: HumanReviewRequest, db: Session = Depends(get_db)):
     """Node N -> Node M -> Node P -> Node E & Node O: Handles human reviewer action."""
     try:
+        user_id = request.user_id
+        username = (request.username or "default").strip().lower()
+        if user_id is None and username:
+            user = db.query(User).filter(User.username == username).first()
+            if user:
+                user_id = user.id
+
         result = pipeline.submit_human_review(
             session_id=request.session_id,
             original_text=request.original_text,
@@ -47,19 +76,28 @@ async def submit_human_review(request: HumanReviewRequest):
             action=request.action,
             final_translation=request.final_translation,
             risk_level=request.risk_level or "",
-            reviewer_notes=request.reviewer_notes or ""
+            reviewer_notes=request.reviewer_notes or "",
+            user_id=user_id,
+            username=username
         )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/feedback", response_model=HumanReviewResponse)
-async def submit_feedback(request: FeedbackRequest):
+async def submit_feedback(request: FeedbackRequest, db: Session = Depends(get_db)):
     """
     Requirement 1 Deliverable: POST /api/v1/feedback
-    Accepts and stores human-corrected text from Human-in-the-Loop review.
+    Accepts and stores human-corrected text from Human-in-the-Loop review with user metadata.
     """
     try:
+        user_id = request.user_id
+        username = (request.username or "default").strip().lower()
+        if user_id is None and username:
+            user = db.query(User).filter(User.username == username).first()
+            if user:
+                user_id = user.id
+
         result = pipeline.submit_human_review(
             session_id=request.session_id,
             original_text=request.original_text,
@@ -67,26 +105,41 @@ async def submit_feedback(request: FeedbackRequest):
             action=request.action,
             final_translation=request.final_translation,
             risk_level=request.risk_level or "",
-            reviewer_notes=request.reviewer_notes or ""
+            reviewer_notes=request.reviewer_notes or "",
+            user_id=user_id,
+            username=username
         )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/history")
-async def get_history_logs(session_id: Optional[str] = None, limit: int = 50, db: Session = Depends(get_db)):
+async def get_history_logs(
+    session_id: Optional[str] = None,
+    user_id: Optional[int] = None,
+    username: Optional[str] = None,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
     """
     Requirement 2 Deliverable: GET /api/v1/history
-    Fetches persistent translation logs from SQLite database using SQLAlchemy.
+    Fetches persistent translation logs from SQLite database using SQLAlchemy,
+    supporting filtering by session_id, user_id, or username.
     """
     query = db.query(TranslationLog)
     if session_id:
         query = query.filter(TranslationLog.session_id == session_id)
+    if user_id is not None:
+        query = query.filter(TranslationLog.user_id == user_id)
+    if username:
+        query = query.filter(TranslationLog.username == username.strip().lower())
     logs = query.order_by(TranslationLog.id.desc()).limit(limit).all()
     return [
         {
             "id": log.id,
             "session_id": log.session_id,
+            "user_id": log.user_id,
+            "username": log.username or "default",
             "source_text": log.source_text,
             "target_text": log.target_text,
             "detected_script": log.detected_script,
@@ -97,6 +150,121 @@ async def get_history_logs(session_id: Optional[str] = None, limit: int = 50, db
         }
         for log in logs
     ]
+
+# ---------------------------------------------------------------------------
+# User Management Endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/users")
+async def list_users(db: Session = Depends(get_db)):
+    """Fetches all registered users with their individual translation activity count."""
+    users = db.query(User).order_by(User.id.asc()).all()
+    results = []
+    for u in users:
+        count = db.query(TranslationLog).filter(TranslationLog.user_id == u.id).count()
+        results.append({
+            "id": u.id,
+            "username": u.username,
+            "display_name": u.display_name or u.username,
+            "email": u.email,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "total_translations": count
+        })
+    return results
+
+@router.post("/users")
+async def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
+    """Creates a new user profile for maintaining distinct translation history."""
+    clean_username = user_in.username.strip().lower()
+    existing = db.query(User).filter(User.username == clean_username).first()
+    if existing:
+        count = db.query(TranslationLog).filter(TranslationLog.user_id == existing.id).count()
+        return {
+            "id": existing.id,
+            "username": existing.username,
+            "display_name": existing.display_name,
+            "email": existing.email,
+            "created_at": existing.created_at.isoformat() if existing.created_at else None,
+            "total_translations": count,
+            "message": "User already exists"
+        }
+    
+    new_user = User(
+        username=clean_username,
+        display_name=user_in.display_name.strip() if user_in.display_name else clean_username.title(),
+        email=user_in.email.strip() if user_in.email else None
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "display_name": new_user.display_name,
+        "email": new_user.email,
+        "created_at": new_user.created_at.isoformat() if new_user.created_at else None,
+        "total_translations": 0,
+        "message": "User created successfully"
+    }
+
+@router.get("/users/{user_id_or_name}")
+async def get_user_detail(user_id_or_name: str, db: Session = Depends(get_db)):
+    """Fetch profile and stats for a specific user by ID or username."""
+    if user_id_or_name.isdigit():
+        user = db.query(User).filter(User.id == int(user_id_or_name)).first()
+    else:
+        user = db.query(User).filter(User.username == user_id_or_name.strip().lower()).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    count = db.query(TranslationLog).filter(TranslationLog.user_id == user.id).count()
+    return {
+        "id": user.id,
+        "username": user.username,
+        "display_name": user.display_name or user.username,
+        "email": user.email,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "total_translations": count
+    }
+
+@router.delete("/users/{user_id_or_name}")
+async def delete_user(user_id_or_name: str, db: Session = Depends(get_db)):
+    """Deletes a user profile (preventing deletion of the default user)."""
+    if user_id_or_name.isdigit():
+        user = db.query(User).filter(User.id == int(user_id_or_name)).first()
+    else:
+        user = db.query(User).filter(User.username == user_id_or_name.strip().lower()).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.username == "default":
+        raise HTTPException(status_code=400, detail="Cannot delete default system user")
+    
+    username = user.username
+    db.delete(user)
+    db.commit()
+    return {"status": "success", "message": f"User '{username}' deleted successfully."}
+
+@router.delete("/users/{user_id_or_name}/history")
+async def clear_user_history(user_id_or_name: str, db: Session = Depends(get_db)):
+    """Clears all translation history logs for a specific user."""
+    if user_id_or_name.isdigit():
+        user = db.query(User).filter(User.id == int(user_id_or_name)).first()
+    else:
+        user = db.query(User).filter(User.username == user_id_or_name.strip().lower()).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    deleted_count = db.query(TranslationLog).filter(TranslationLog.user_id == user.id).delete()
+    db.commit()
+    return {
+        "status": "success",
+        "deleted_logs": deleted_count,
+        "username": user.username,
+        "message": f"Cleared {deleted_count} logs for user '{user.username}'"
+    }
 
 @router.get("/evaluation-dataset")
 async def get_evaluation_dataset():

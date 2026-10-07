@@ -1759,3 +1759,379 @@ textarea {
   letter-spacing: 0.05em;
   margin-right: 0.4rem;
 }
+
+/* ==========================================================================
+   User Profile & Multi-User History Management Styles
+   ========================================================================== */
+
+.user-profile-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.user-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--brand-primary);
+  transform: translateY(-1px);
+}
+
+.user-avatar-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-primary), #a855f7);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+}
+
+.user-display-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-chevron {
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.user-profile-wrapper.open .dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Panel */
+.user-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 310px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1050;
+  padding: 0.75rem;
+  backdrop-filter: blur(12px);
+  animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.user-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 0.65rem;
+}
+
+.user-dropdown-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.user-avatar-large {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-primary), #ec4899);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.35);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.user-handle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.user-stats-pill {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  background: var(--brand-light);
+  color: var(--brand-primary);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.dropdown-section-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 0.4rem 0.2rem 0.4rem;
+}
+
+.user-options-list {
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.user-option-item:hover {
+  background: var(--bg-hover);
+}
+
+.user-option-item.active {
+  background: var(--bg-active);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.user-option-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-option-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border-light);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.user-option-item.active .user-option-avatar {
+  background: var(--brand-primary);
+  color: #ffffff;
+}
+
+.user-option-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-option-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-option-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.user-option-check {
+  color: var(--brand-primary);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.dropdown-footer {
+  border-top: 1px solid var(--border-light);
+  padding-top: 0.6rem;
+}
+
+.add-user-toggle-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px dashed var(--border-light);
+  color: var(--brand-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.add-user-toggle-btn:hover {
+  background: var(--brand-light);
+  border-color: var(--brand-primary);
+}
+
+.new-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.user-input-field {
+  width: 100%;
+  padding: 0.42rem 0.6rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card-subtle);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.user-input-field:focus {
+  border-color: var(--brand-primary);
+  background: var(--bg-card);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.btn-create-profile {
+  flex: 1;
+  padding: 0.38rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--brand-primary);
+  color: #ffffff;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btn-create-profile:hover {
+  background: var(--brand-primary-hover);
+}
+
+.btn-cancel-profile {
+  padding: 0.38rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-cancel-profile:hover {
+  background: var(--bg-hover);
+}
+
+/* History Drawer User Filter */
+.drawer-user-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: var(--bg-card-subtle);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.filter-label-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.history-user-select {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  max-width: 160px;
+}
+
+.history-user-select:focus {
+  border-color: var(--brand-primary);
+}
+
+.danger-hover:hover {
+  color: var(--accent-rose) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  background: var(--accent-rose-light) !important;
+}
+
+.history-user-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: var(--brand-light);
+  color: var(--brand-primary);
+  font-family: var(--font-mono);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}

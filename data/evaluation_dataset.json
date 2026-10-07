@@ -331,6 +331,46 @@
       "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
       "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
       "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1791137139.9940538,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1791137310.536288,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1791137387.9895372,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
+    },
+    {
+      "timestamp": 1791137587.2405334,
+      "session_id": "qa_feedback_sess_1",
+      "original_text": "Mera Raast transfer fail ho gaya 5000 rupees",
+      "ai_translation": "Raast transfer failed 5000 rupees.",
+      "human_action": "correct",
+      "final_translation": "Customer reports failed Raast transfer of PKR 5000. Funds debited from account.",
+      "original_risk_level": "FLAGGED_FOR_HUMAN_REVIEW_HIGH_RISK_NUMBER_MISMATCH",
+      "reviewer_notes": "Corrected by QA automated test suite."
     }
   ]
 }
